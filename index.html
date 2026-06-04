@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ガソリン計算">
+<meta name="theme-color" content="#34495e">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>ガソリン重量・容量 計算</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Yu Gothic UI', 'Hiragino Sans', 'Meiryo', sans-serif;
+    background: #f0f2f5;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: 16px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .card {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+    padding: 28px 20px 24px;
+    width: 100%;
+    max-width: 480px;
+  }
+  h1 {
+    text-align: center;
+    font-size: 19px;
+    color: #333;
+    margin-bottom: 20px;
+    letter-spacing: 1px;
+  }
+
+  /* 比重セクション */
+  .gravity-section {
+    background: #e8f4fd;
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .gravity-section label {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1a5276;
+    white-space: nowrap;
+  }
+  .gravity-section input {
+    width: 110px;
+    padding: 8px 12px;
+    font-size: 18px;
+    font-weight: 700;
+    text-align: center;
+    border: 2px solid #85c1e9;
+    border-radius: 8px;
+    outline: none;
+    color: #1a5276;
+    background: #fff;
+    transition: border-color 0.2s;
+    -webkit-appearance: none;
+  }
+  .gravity-section input:focus {
+    border-color: #2980b9;
+  }
+  .gravity-hint {
+    font-size: 11px;
+    color: #7f8c8d;
+    margin-left: auto;
+  }
+
+  /* 計算テーブル */
+  .calc-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 2px solid #ddd;
+  }
+  .calc-table th {
+    background: #34495e;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 10px 8px;
+    text-align: center;
+  }
+  .calc-table td {
+    padding: 0;
+    height: 60px;
+    text-align: center;
+    vertical-align: middle;
+    border-top: 2px solid #ddd;
+  }
+  .calc-table td:first-child {
+    border-right: 2px solid #ddd;
+  }
+
+  /* 入力セル */
+  .input-cell {
+    position: relative;
+  }
+  .input-cell input {
+    width: 100%;
+    height: 100%;
+    padding: 12px 44px 12px 12px;
+    font-size: 20px;
+    font-weight: 700;
+    border: none;
+    outline: none;
+    background: transparent;
+    text-align: right;
+    color: #2c3e50;
+    -webkit-appearance: none;
+  }
+  .input-cell input::placeholder {
+    color: #ccc;
+    font-weight: 400;
+    font-size: 14px;
+  }
+  .input-cell .unit, .result-cell .unit {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 14px;
+    font-weight: 700;
+    pointer-events: none;
+    user-select: none;
+  }
+  .row-top .unit, .row-top .result-value { color: #c58a1a; }
+  .row-bottom .unit, .row-bottom .result-value { color: #27ae60; }
+
+  /* 結果セル */
+  .result-cell {
+    position: relative;
+  }
+
+  /* 上段の色（L → kg）*/
+  .row-top td { background: #fffef5; }
+  /* 下段の色（kg → L）*/
+  .row-bottom td { background: #f0faf0; }
+
+  .result-value {
+    font-size: 20px;
+    font-weight: 700;
+    padding-right: 44px;
+    min-height: 28px;
+    display: inline-block;
+    line-height: 28px;
+  }
+  .result-value:empty::before {
+    content: '---';
+    color: #ccc;
+    font-weight: 400;
+  }
+
+  /* 行ラベル */
+  .row-labels {
+    margin-top: 10px;
+    display: flex;
+    gap: 8px;
+  }
+  .row-label {
+    flex: 1;
+    font-size: 11px;
+    color: #999;
+    text-align: center;
+    padding: 4px 0;
+  }
+
+  /* 矢印 */
+  .arrow-header {
+    font-size: 10px;
+    letter-spacing: 0.5px;
+  }
+
+  /* フォーカスハイライト */
+  .input-cell:focus-within {
+    background: #fff9e6 !important;
+  }
+
+  /* フッター */
+  .footer {
+    margin-top: 14px;
+    text-align: center;
+    font-size: 11px;
+    color: #bbb;
+  }
+
+  /* スマホ向け微調整 */
+  @media (max-width: 380px) {
+    .card { padding: 20px 14px 18px; }
+    h1 { font-size: 17px; }
+    .input-cell input, .result-value { font-size: 18px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <h1>&#9981; ガソリン 重量・容量 計算</h1>
+
+  <!-- 比重入力 -->
+  <div class="gravity-section">
+    <label for="gravity">比重:</label>
+    <input type="number" id="gravity" step="0.001" min="0" placeholder="0.783" inputmode="decimal">
+    <span class="gravity-hint">※ 自動保存</span>
+  </div>
+
+  <!-- 計算テーブル -->
+  <table class="calc-table">
+    <thead>
+      <tr>
+        <th style="width:50%;">入力</th>
+        <th style="width:50%;">計算結果 <span class="arrow-header">（自動）</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- 上段: L → kg -->
+      <tr class="row-top">
+        <td class="input-cell">
+          <input type="number" id="inputL" step="any" min="0" placeholder="数量を入力" inputmode="decimal">
+          <span class="unit">L</span>
+        </td>
+        <td class="result-cell">
+          <span class="result-value" id="resultKg"></span>
+          <span class="unit">kg</span>
+        </td>
+      </tr>
+      <!-- 下段: kg → L -->
+      <tr class="row-bottom">
+        <td class="input-cell">
+          <input type="number" id="inputKg" step="any" min="0" placeholder="数量を入力" inputmode="decimal">
+          <span class="unit">kg</span>
+        </td>
+        <td class="result-cell">
+          <span class="result-value" id="resultL"></span>
+          <span class="unit">L</span>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="row-labels">
+    <div class="row-label">L × 比重 → kg</div>
+    <div class="row-label">kg ÷ 比重 → L</div>
+  </div>
+
+  <div class="footer">比重の値はブラウザに自動保存されます</div>
+</div>
+
+<script>
+  // --- PWA: Service Worker 登録 ---
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+
+  const gravityInput = document.getElementById('gravity');
+  const inputL       = document.getElementById('inputL');
+  const inputKg      = document.getElementById('inputKg');
+  const resultKg     = document.getElementById('resultKg');
+  const resultL      = document.getElementById('resultL');
+
+  // --- 比重を localStorage から復元 ---
+  const savedGravity = localStorage.getItem('gasoline_gravity');
+  if (savedGravity !== null) {
+    gravityInput.value = savedGravity;
+  }
+
+  // --- 計算関数 ---
+  function calc() {
+    const g = parseFloat(gravityInput.value);
+
+    // L → kg
+    const lVal = parseFloat(inputL.value);
+    if (!isNaN(g) && g > 0 && !isNaN(lVal)) {
+      resultKg.textContent = (lVal * g).toFixed(3);
+    } else {
+      resultKg.textContent = '';
+    }
+
+    // kg → L
+    const kgVal = parseFloat(inputKg.value);
+    if (!isNaN(g) && g > 0 && !isNaN(kgVal)) {
+      resultL.textContent = (kgVal / g).toFixed(3);
+    } else {
+      resultL.textContent = '';
+    }
+  }
+
+  // --- イベント ---
+  gravityInput.addEventListener('input', () => {
+    localStorage.setItem('gasoline_gravity', gravityInput.value);
+    calc();
+  });
+  inputL.addEventListener('input', calc);
+  inputKg.addEventListener('input', calc);
+
+  // 初期計算
+  calc();
+</script>
+
+</body>
+</html>
