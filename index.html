@@ -17,11 +17,13 @@
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Yu Gothic UI', 'Hiragino Sans', 'Meiryo', sans-serif;
     background: #f0f2f5;
     display: flex;
-    justify-content: center;
+    flex-direction: column;
+    justify-content: flex-start;
     align-items: center;
     min-height: 100vh;
     min-height: 100dvh;
     padding: 16px;
+    gap: 16px;
     -webkit-tap-highlight-color: transparent;
   }
   .card {
@@ -200,11 +202,106 @@
     color: #bbb;
   }
 
+  /* ===== 電卓 ===== */
+  .calc-card {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+    padding: 20px;
+    width: 100%;
+    max-width: 480px;
+  }
+  .calc-card h2 {
+    text-align: center;
+    font-size: 16px;
+    color: #555;
+    margin-bottom: 14px;
+  }
+  .calc-display {
+    background: #1e2a38;
+    color: #fff;
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+    text-align: right;
+    min-height: 64px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .calc-expr {
+    font-size: 13px;
+    color: #8899aa;
+    min-height: 18px;
+    word-break: break-all;
+  }
+  .calc-result {
+    font-size: 28px;
+    font-weight: 700;
+    word-break: break-all;
+    line-height: 1.2;
+  }
+  .calc-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  .calc-btn {
+    padding: 14px 0;
+    font-size: 20px;
+    font-weight: 600;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    transition: background 0.1s, transform 0.08s;
+    touch-action: manipulation;
+  }
+  .calc-btn:active {
+    transform: scale(0.95);
+  }
+  .calc-btn.num {
+    background: #f4f6f8;
+    color: #2c3e50;
+  }
+  .calc-btn.num:active {
+    background: #e0e4e8;
+  }
+  .calc-btn.op {
+    background: #3498db;
+    color: #fff;
+  }
+  .calc-btn.op:active {
+    background: #2180b9;
+  }
+  .calc-btn.eq {
+    background: #e67e22;
+    color: #fff;
+  }
+  .calc-btn.eq:active {
+    background: #c96b15;
+  }
+  .calc-btn.fn {
+    background: #ecf0f1;
+    color: #e74c3c;
+    font-size: 16px;
+  }
+  .calc-btn.fn:active {
+    background: #dce0e1;
+  }
+  .calc-btn.wide {
+    grid-column: span 2;
+  }
+
   /* スマホ向け微調整 */
   @media (max-width: 380px) {
     .card { padding: 20px 14px 18px; }
     h1 { font-size: 17px; }
     .input-cell input, .result-value { font-size: 18px; }
+    .calc-btn { padding: 12px 0; font-size: 18px; }
+    .calc-result { font-size: 24px; }
   }
 </style>
 </head>
@@ -262,6 +359,40 @@
   <div class="footer">比重の値はブラウザに自動保存されます</div>
 </div>
 
+<!-- 電卓 -->
+<div class="calc-card">
+  <h2>&#128290; 電卓</h2>
+  <div class="calc-display">
+    <div class="calc-expr" id="calcExpr"></div>
+    <div class="calc-result" id="calcResult">0</div>
+  </div>
+  <div class="calc-grid">
+    <button class="calc-btn fn" data-act="clear">AC</button>
+    <button class="calc-btn fn" data-act="backspace">&#9003;</button>
+    <button class="calc-btn fn" data-act="percent">%</button>
+    <button class="calc-btn op" data-act="op" data-op="÷">÷</button>
+
+    <button class="calc-btn num" data-act="num" data-val="7">7</button>
+    <button class="calc-btn num" data-act="num" data-val="8">8</button>
+    <button class="calc-btn num" data-act="num" data-val="9">9</button>
+    <button class="calc-btn op" data-act="op" data-op="×">×</button>
+
+    <button class="calc-btn num" data-act="num" data-val="4">4</button>
+    <button class="calc-btn num" data-act="num" data-val="5">5</button>
+    <button class="calc-btn num" data-act="num" data-val="6">6</button>
+    <button class="calc-btn op" data-act="op" data-op="-">-</button>
+
+    <button class="calc-btn num" data-act="num" data-val="1">1</button>
+    <button class="calc-btn num" data-act="num" data-val="2">2</button>
+    <button class="calc-btn num" data-act="num" data-val="3">3</button>
+    <button class="calc-btn op" data-act="op" data-op="+">+</button>
+
+    <button class="calc-btn num wide" data-act="num" data-val="0">0</button>
+    <button class="calc-btn num" data-act="dot">.</button>
+    <button class="calc-btn eq" data-act="equals">=</button>
+  </div>
+</div>
+
 <script>
   // --- PWA: Service Worker 登録 ---
   if ('serviceWorker' in navigator) {
@@ -311,6 +442,95 @@
 
   // 初期計算
   calc();
+
+  // ===== 電卓 =====
+  const calcExpr   = document.getElementById('calcExpr');
+  const calcResult = document.getElementById('calcResult');
+  let cCurrent = '0';
+  let cPrev = '';
+  let cOp = '';
+  let cJustEval = false;
+
+  function cUpdate() {
+    calcResult.textContent = cCurrent;
+    calcExpr.textContent = cPrev ? (cPrev + ' ' + cOp) : '';
+  }
+
+  function cEval(a, op, b) {
+    a = parseFloat(a); b = parseFloat(b);
+    if (isNaN(a) || isNaN(b)) return '0';
+    let r;
+    switch(op) {
+      case '+': r = a + b; break;
+      case '-': r = a - b; break;
+      case '×': r = a * b; break;
+      case '÷': r = b === 0 ? 'Error' : a / b; break;
+      default: return b.toString();
+    }
+    if (typeof r === 'number') {
+      // 浮動小数点誤差対策: 小数点以下12桁で丸め
+      r = parseFloat(r.toPrecision(12));
+    }
+    return r.toString();
+  }
+
+  document.querySelector('.calc-grid').addEventListener('click', (e) => {
+    const btn = e.target.closest('.calc-btn');
+    if (!btn) return;
+    const act = btn.dataset.act;
+
+    switch(act) {
+      case 'num': {
+        const v = btn.dataset.val;
+        if (cJustEval) { cCurrent = v; cJustEval = false; }
+        else if (cCurrent === '0' && v !== '0') cCurrent = v;
+        else if (cCurrent === '0' && v === '0') {}
+        else cCurrent += v;
+        break;
+      }
+      case 'dot':
+        if (cJustEval) { cCurrent = '0.'; cJustEval = false; }
+        else if (!cCurrent.includes('.')) cCurrent += '.';
+        break;
+      case 'op': {
+        const newOp = btn.dataset.op;
+        if (cPrev && cOp && !cJustEval) {
+          cCurrent = cEval(cPrev, cOp, cCurrent);
+        }
+        cPrev = cCurrent;
+        cOp = newOp;
+        cCurrent = '0';
+        cJustEval = false;
+        break;
+      }
+      case 'equals':
+        if (cPrev && cOp) {
+          const expr = cPrev + ' ' + cOp + ' ' + cCurrent;
+          cCurrent = cEval(cPrev, cOp, cCurrent);
+          cPrev = '';
+          cOp = '';
+          calcExpr.textContent = expr + ' =';
+          calcResult.textContent = cCurrent;
+          cJustEval = true;
+          return;
+        }
+        break;
+      case 'clear':
+        cCurrent = '0'; cPrev = ''; cOp = ''; cJustEval = false;
+        break;
+      case 'backspace':
+        if (cJustEval) { cCurrent = '0'; cJustEval = false; }
+        else {
+          cCurrent = cCurrent.slice(0, -1);
+          if (!cCurrent || cCurrent === '-') cCurrent = '0';
+        }
+        break;
+      case 'percent':
+        cCurrent = (parseFloat(cCurrent) / 100).toString();
+        break;
+    }
+    cUpdate();
+  });
 </script>
 
 </body>
