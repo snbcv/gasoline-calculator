@@ -73,13 +73,13 @@
     transition: border-color 0.2s;
     -webkit-appearance: none;
   }
+  .gravity-section input::placeholder {
+    color: #ccc;
+    font-weight: 400;
+    font-size: 14px;
+  }
   .gravity-section input:focus {
     border-color: #2980b9;
-  }
-  .gravity-hint {
-    font-size: 11px;
-    color: #7f8c8d;
-    margin-left: auto;
   }
 
   /* 計算テーブル */
@@ -194,28 +194,14 @@
     background: #fff9e6 !important;
   }
 
-  /* フッター */
-  .footer {
-    margin-top: 14px;
-    text-align: center;
-    font-size: 11px;
-    color: #bbb;
-  }
-
   /* ===== 電卓 ===== */
   .calc-card {
     background: #fff;
     border-radius: 16px;
     box-shadow: 0 4px 24px rgba(0,0,0,0.10);
-    padding: 20px;
+    padding: 16px;
     width: 100%;
     max-width: 480px;
-  }
-  .calc-card h2 {
-    text-align: center;
-    font-size: 16px;
-    color: #555;
-    margin-bottom: 14px;
   }
   .calc-display {
     background: #1e2a38;
@@ -313,8 +299,7 @@
   <!-- 比重入力 -->
   <div class="gravity-section">
     <label for="gravity">比重:</label>
-    <input type="number" id="gravity" step="0.001" min="0" placeholder="0.783" inputmode="decimal">
-    <span class="gravity-hint">※ 自動保存</span>
+    <input type="number" id="gravity" step="0.001" min="0" placeholder="比重を入力" inputmode="decimal">
   </div>
 
   <!-- 計算テーブル -->
@@ -356,12 +341,10 @@
     <div class="row-label">kg ÷ 比重 → L</div>
   </div>
 
-  <div class="footer">比重の値はブラウザに自動保存されます</div>
 </div>
 
 <!-- 電卓 -->
 <div class="calc-card">
-  <h2>&#128290; 電卓</h2>
   <div class="calc-display">
     <div class="calc-expr" id="calcExpr"></div>
     <div class="calc-result" id="calcResult">0</div>
