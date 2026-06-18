@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gasoline-calc-v4';
+const CACHE_NAME = 'gasoline-calc-v5';
 const ASSETS = [
   './',
   './index.html',

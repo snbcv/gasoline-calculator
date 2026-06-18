@@ -194,6 +194,40 @@
     background: #fff9e6 !important;
   }
 
+  /* ペーストボタン */
+  .paste-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 14px;
+  }
+  .paste-btn {
+    padding: 14px 0;
+    font-size: 16px;
+    font-weight: 700;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    text-align: center;
+    touch-action: manipulation;
+    transition: transform 0.08s;
+  }
+  .paste-btn:active {
+    transform: scale(0.97);
+  }
+  .paste-L {
+    background: #fffef5;
+    color: #c58a1a;
+    border: 2px solid #c58a1a;
+  }
+  .paste-Kg {
+    background: #f0faf0;
+    color: #27ae60;
+    border: 2px solid #27ae60;
+  }
+
   /* ===== 電卓 ===== */
   .calc-card {
     background: #fff;
@@ -374,6 +408,10 @@
     <button class="calc-btn num" data-act="dot">.</button>
     <button class="calc-btn eq" data-act="equals">=</button>
   </div>
+  <div class="paste-buttons">
+    <button class="paste-btn paste-L" id="pasteL">L にペースト</button>
+    <button class="paste-btn paste-Kg" id="pasteKg">Kg にペースト</button>
+  </div>
 </div>
 
 <script>
@@ -425,6 +463,22 @@
 
   // 初期計算
   calc();
+
+  // ===== ペーストボタン =====
+  document.getElementById('pasteL').addEventListener('click', () => {
+    const val = calcResult.textContent;
+    if (val && val !== 'Error') {
+      inputL.value = val;
+      calc();
+    }
+  });
+  document.getElementById('pasteKg').addEventListener('click', () => {
+    const val = calcResult.textContent;
+    if (val && val !== 'Error') {
+      inputKg.value = val;
+      calc();
+    }
+  });
 
   // ===== 電卓 =====
   const calcExpr   = document.getElementById('calcExpr');
