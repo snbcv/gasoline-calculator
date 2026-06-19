@@ -542,7 +542,7 @@
           cExprLog = '(' + prevExpr + ' ' + cOp + ' ' + cCurrent + ')';
           cCurrent = cEval(cPrev, cOp, cCurrent);
         } else if (cJustEval && cExprLog) {
-          // = の後に続けて演算する場合、既存の式をそのまま使う
+          cExprLog = '(' + cExprLog + ')';
         } else {
           cExprLog = cCurrent;
         }
