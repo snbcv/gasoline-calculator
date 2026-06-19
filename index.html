@@ -539,10 +539,11 @@
         const newOp = btn.dataset.op;
         if (cPrev && cOp && !cJustEval) {
           const prevExpr = cExprLog || cPrev;
-          cExprLog = '(' + prevExpr + ' ' + cOp + ' ' + cCurrent + ')';
+          const combined = prevExpr + ' ' + cOp + ' ' + cCurrent;
+          cExprLog = (newOp !== cOp) ? '(' + combined + ')' : combined;
           cCurrent = cEval(cPrev, cOp, cCurrent);
         } else if (cJustEval && cExprLog) {
-          cExprLog = '(' + cExprLog + ')';
+          cExprLog = (newOp !== cOp) ? '(' + cExprLog + ')' : cExprLog;
         } else {
           cExprLog = cCurrent;
         }
