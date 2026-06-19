@@ -228,6 +228,38 @@
     border: 2px solid #27ae60;
   }
 
+  /* 計算履歴 */
+  .calc-history {
+    background: #f7f8fa;
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-bottom: 10px;
+    max-height: 120px;
+    overflow-y: auto;
+    display: none;
+  }
+  .calc-history.has-items {
+    display: block;
+  }
+  .calc-history-item {
+    font-size: 13px;
+    color: #666;
+    text-align: right;
+    padding: 3px 0;
+    border-bottom: 1px solid #eee;
+  }
+  .calc-history-item:last-child {
+    border-bottom: none;
+  }
+  .calc-history-item .hist-expr {
+    color: #999;
+  }
+  .calc-history-item .hist-result {
+    color: #2c3e50;
+    font-weight: 700;
+    margin-left: 6px;
+  }
+
   /* ===== 電卓 ===== */
   .calc-card {
     background: #fff;
@@ -379,6 +411,7 @@
 
 <!-- 電卓 -->
 <div class="calc-card">
+  <div class="calc-history" id="calcHistory"></div>
   <div class="calc-display">
     <div class="calc-expr" id="calcExpr"></div>
     <div class="calc-result" id="calcResult">0</div>
@@ -481,8 +514,9 @@
   });
 
   // ===== 電卓 =====
-  const calcExpr   = document.getElementById('calcExpr');
-  const calcResult = document.getElementById('calcResult');
+  const calcExpr    = document.getElementById('calcExpr');
+  const calcResult  = document.getElementById('calcResult');
+  const calcHistory = document.getElementById('calcHistory');
   let cCurrent = '0';
   let cPrev = '';
   let cOp = '';
@@ -491,6 +525,19 @@
   function cUpdate() {
     calcResult.textContent = cCurrent;
     calcExpr.textContent = cPrev ? (cPrev + ' ' + cOp) : '';
+  }
+
+  function addHistory(expr, result) {
+    const item = document.createElement('div');
+    item.className = 'calc-history-item';
+    item.innerHTML = '<span class="hist-expr">' + expr + ' =</span><span class="hist-result">' + result + '</span>';
+    calcHistory.prepend(item);
+    calcHistory.classList.add('has-items');
+  }
+
+  function clearHistory() {
+    calcHistory.innerHTML = '';
+    calcHistory.classList.remove('has-items');
   }
 
   function cEval(a, op, b) {
@@ -548,12 +595,14 @@
           cOp = '';
           calcExpr.textContent = expr + ' =';
           calcResult.textContent = cCurrent;
+          addHistory(expr, cCurrent);
           cJustEval = true;
           return;
         }
         break;
       case 'clear':
         cCurrent = '0'; cPrev = ''; cOp = ''; cJustEval = false;
+        clearHistory();
         break;
       case 'backspace':
         if (cJustEval) { cCurrent = '0'; cJustEval = false; }
