@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gasoline-calc-dial-v1';
+const CACHE_NAME = 'gasoline-calc-dial-v2';
 const ASSETS = [
   './',
   './index.html',
