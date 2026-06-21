@@ -35,12 +35,30 @@
     max-width: 480px;
   }
   h1 {
+    position: relative;
     text-align: center;
     font-size: 19px;
     color: #333;
     margin-bottom: 20px;
     letter-spacing: 1px;
+    padding: 0 32px;
   }
+  /* 歯車ボタン */
+  .gear-btn {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    font-size: 22px;
+    line-height: 1;
+    color: #7a8a9a;
+    cursor: pointer;
+    padding: 4px;
+    touch-action: manipulation;
+  }
+  .gear-btn:active { color: #34495e; }
 
   /* 比重セクション */
   .gravity-section {
@@ -213,6 +231,130 @@
     text-align: center;
   }
 
+  /* ダイヤルOFF時は操作系を隠す */
+  body.dial-off .dial-icon,
+  body.dial-off .dial-hint { display: none; }
+  body.dial-off .input-cell input { padding-left: 12px; }
+
+  /* ===== 設定モーダル ===== */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 100;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: #fff;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 360px;
+    padding: 20px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.25);
+    animation: modalIn 0.18s ease-out;
+  }
+  @keyframes modalIn {
+    from { transform: scale(0.94); opacity: 0; }
+    to   { transform: scale(1); opacity: 1; }
+  }
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+  }
+  .modal-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #2c3e50;
+  }
+  .modal-close {
+    background: none;
+    border: none;
+    font-size: 28px;
+    line-height: 1;
+    color: #999;
+    cursor: pointer;
+    padding: 0 4px;
+    touch-action: manipulation;
+  }
+  .setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .setting-label {
+    font-size: 15px;
+    color: #2c3e50;
+    font-weight: 600;
+  }
+  .setting-sub {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid #eee;
+  }
+  .setting-sub.show { display: flex; }
+  .setting-sub input {
+    width: 110px;
+    padding: 8px 12px;
+    font-size: 18px;
+    font-weight: 700;
+    text-align: center;
+    border: 2px solid #85c1e9;
+    border-radius: 8px;
+    outline: none;
+    color: #1a5276;
+    background: #fff;
+    -webkit-appearance: none;
+  }
+  .setting-sub input::placeholder { color: #ccc; font-weight: 400; }
+  .setting-note {
+    margin-top: 16px;
+    font-size: 11px;
+    color: #999;
+    line-height: 1.6;
+  }
+
+  /* iOS風トグルスイッチ */
+  .switch {
+    position: relative;
+    display: inline-block;
+    width: 52px;
+    height: 31px;
+    flex-shrink: 0;
+  }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider {
+    position: absolute;
+    inset: 0;
+    background: #ccc;
+    border-radius: 31px;
+    transition: background 0.25s;
+  }
+  .slider::before {
+    content: '';
+    position: absolute;
+    height: 27px;
+    width: 27px;
+    left: 2px;
+    top: 2px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 0.25s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  }
+  .switch input:checked + .slider { background: #34c759; }
+  .switch input:checked + .slider::before { transform: translateX(21px); }
+
   /* 矢印 */
   .arrow-header {
     font-size: 10px;
@@ -363,7 +505,7 @@
 <body>
 
 <div class="card">
-  <h1>ガソリン 重量・容量 計算</h1>
+  <h1>ガソリン 重量・容量 計算<button class="gear-btn" id="openSettings" aria-label="設定">&#9881;</button></h1>
 
   <!-- 比重入力 -->
   <div class="gravity-section">
@@ -412,7 +554,7 @@
     <div class="row-label">kg ÷ 比重 → L</div>
   </div>
 
-  <div class="dial-hint">&#8645; 数量欄をダブルタップ＆そのまま上下スワイプで1ずつ増減</div>
+  <div class="dial-hint">&#8645; 数量欄をダブルタップ＆そのまま上下スワイプで増減（設定 &#9881; でON/OFF・ステップ変更）</div>
 
 </div>
 
@@ -451,6 +593,28 @@
     <button class="paste-btn paste-L" id="pasteL">L にペースト</button>
     <button class="paste-btn paste-Kg" id="pasteKg">Kg にペースト</button>
     <button class="paste-btn paste-clear" id="clearInputs">入力をクリア</button>
+  </div>
+</div>
+
+<!-- 設定モーダル -->
+<div class="modal-overlay" id="settingsOverlay">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-header">
+      <span class="modal-title">設定</span>
+      <button class="modal-close" id="closeSettings" aria-label="閉じる">&times;</button>
+    </div>
+    <div class="setting-row">
+      <span class="setting-label">ダブルタップでダイヤル操作</span>
+      <label class="switch">
+        <input type="checkbox" id="dialToggle">
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div class="setting-sub" id="stepRow">
+      <label class="setting-label" for="stepInput">増減ステップ</label>
+      <input type="number" id="stepInput" step="any" min="0" inputmode="decimal" placeholder="1">
+    </div>
+    <div class="setting-note">この設定はこの端末（ブラウザ）にのみ保存されます。</div>
   </div>
 </div>
 
@@ -504,17 +668,67 @@
   // 初期計算
   calc();
 
-  // ===== ダイヤル操作（ダブルタップ＆ホールド → 上下スワイプで整数部を1ずつ増減） =====
-  const STEP_PX        = 20;  // この px だけ動かすと 1 増減（iPadで約5mm）
+  // ===== 設定（端末ごとに localStorage 保存） =====
+  const settingsOverlay = document.getElementById('settingsOverlay');
+  const dialToggle      = document.getElementById('dialToggle');
+  const stepRow         = document.getElementById('stepRow');
+  const stepInput       = document.getElementById('stepInput');
+
+  let dialEnabledStored = localStorage.getItem('dial_enabled');
+  let dialEnabled = (dialEnabledStored === null) ? true : (dialEnabledStored === '1');
+  let dialStep = parseFloat(localStorage.getItem('dial_step'));
+  if (isNaN(dialStep) || dialStep <= 0) dialStep = 1;
+
+  function applySettingsUI() {
+    dialToggle.checked = dialEnabled;
+    stepInput.value = dialStep;
+    stepRow.classList.toggle('show', dialEnabled);
+    document.body.classList.toggle('dial-off', !dialEnabled);
+  }
+  applySettingsUI();
+
+  document.getElementById('openSettings').addEventListener('click', () => {
+    settingsOverlay.classList.add('open');
+  });
+  function closeSettings() { settingsOverlay.classList.remove('open'); }
+  document.getElementById('closeSettings').addEventListener('click', closeSettings);
+  settingsOverlay.addEventListener('click', (e) => {
+    if (e.target === settingsOverlay) closeSettings();
+  });
+
+  dialToggle.addEventListener('change', () => {
+    dialEnabled = dialToggle.checked;
+    localStorage.setItem('dial_enabled', dialEnabled ? '1' : '0');
+    stepRow.classList.toggle('show', dialEnabled);
+    document.body.classList.toggle('dial-off', !dialEnabled);
+  });
+
+  stepInput.addEventListener('input', () => {
+    const v = parseFloat(stepInput.value);
+    if (!isNaN(v) && v > 0) {
+      dialStep = v;
+      localStorage.setItem('dial_step', String(v));
+    }
+  });
+
+  // ===== ダイヤル操作（ダブルタップ＆ホールド → 上下スワイプでステップ分ずつ増減） =====
+  const STEP_PX        = 20;  // この px だけ動かすと 1 ステップ増減（iPadで約5mm）
   const DOUBLE_TAP_MS  = 300; // 1回目と2回目のタップ間隔の上限
   const MOVE_TAP_LIMIT = 10;  // これ以上動いたらタップではなくスクロール扱い
+
+  // 文字列・数値の小数桁数を返す
+  function decimalsOf(s) {
+    s = String(s);
+    const i = s.indexOf('.');
+    return i < 0 ? 0 : (s.length - i - 1);
+  }
 
   function attachDial(input) {
     let active = false;
     let startY = 0;
     let baselineY = 0;
-    let baseInt = 0;
-    let decStr = '';
+    let baseVal = 0;
+    let baseDec = 0;
     let touchId = null;
     let lastTapTime = 0;
     let moved = false;
@@ -523,23 +737,17 @@
       // --- ダイヤルモード開始 ---
       active = true;
       baselineY = startY;
-      // 現在値を整数部・小数部に分解（小数部は維持）
+      // 現在値を取得（小数桁は維持する）
       const raw = (input.value || '').trim();
-      let intPart = '0', dec = '';
-      if (raw !== '') {
-        const cleaned = raw.replace('-', '');
-        const parts = cleaned.split('.');
-        intPart = (parts[0] === '') ? '0' : parts[0];
-        dec = (parts.length > 1) ? parts[1] : '';
-      }
-      baseInt = parseInt(intPart, 10);
-      if (isNaN(baseInt)) baseInt = 0;
-      decStr = dec;
+      baseVal = parseFloat(raw);
+      if (isNaN(baseVal)) baseVal = 0;
+      baseDec = decimalsOf(raw.replace('-', ''));
       input.blur(); // キーボードを閉じる
       input.closest('.input-cell').classList.add('dialing');
     }
 
     input.addEventListener('touchstart', (e) => {
+      if (!dialEnabled) return;            // 設定でOFFなら何もしない
       if (e.touches.length !== 1) return;
       const t = e.touches[0];
       touchId = t.identifier;
@@ -569,9 +777,11 @@
       // --- ダイヤルモード中 ---
       e.preventDefault(); // ページスクロールを止める
       const steps = Math.round((baselineY - t.clientY) / STEP_PX);
-      let newInt = baseInt + steps;
-      if (newInt < 0) newInt = 0;
-      input.value = newInt + (decStr ? '.' + decStr : '');
+      let newVal = baseVal + steps * dialStep;
+      if (newVal < 0) newVal = 0;
+      // 表示桁数 = 現在値とステップの小数桁の大きい方（最大6桁）
+      const places = Math.min(6, Math.max(baseDec, decimalsOf(dialStep)));
+      input.value = newVal.toFixed(places);
       calc();
     }, { passive: false });
 
