@@ -412,7 +412,7 @@
     <div class="row-label">kg ÷ 比重 → L</div>
   </div>
 
-  <div class="dial-hint">&#8645; 数量欄を1秒長押し → 上下スワイプで1ずつ増減</div>
+  <div class="dial-hint">&#8645; 数量欄をダブルタップ＆そのまま上下スワイプで1ずつ増減</div>
 
 </div>
 
@@ -504,47 +504,55 @@
   // 初期計算
   calc();
 
-  // ===== ダイヤル操作（1秒長押し → 上下スワイプで整数部を1ずつ増減） =====
-  const STEP_PX     = 20;   // この px だけ動かすと 1 増減（iPadで約5mm）
-  const HOLD_MS     = 1000; // 長押し判定（ミリ秒）
-  const MOVE_CANCEL = 10;   // 長押し成立前にこれ以上動いたらスクロール扱いで中止
+  // ===== ダイヤル操作（ダブルタップ＆ホールド → 上下スワイプで整数部を1ずつ増減） =====
+  const STEP_PX        = 20;  // この px だけ動かすと 1 増減（iPadで約5mm）
+  const DOUBLE_TAP_MS  = 300; // 1回目と2回目のタップ間隔の上限
+  const MOVE_TAP_LIMIT = 10;  // これ以上動いたらタップではなくスクロール扱い
 
   function attachDial(input) {
-    let holdTimer = null;
     let active = false;
     let startY = 0;
     let baselineY = 0;
     let baseInt = 0;
     let decStr = '';
     let touchId = null;
+    let lastTapTime = 0;
+    let moved = false;
+
+    function activate() {
+      // --- ダイヤルモード開始 ---
+      active = true;
+      baselineY = startY;
+      // 現在値を整数部・小数部に分解（小数部は維持）
+      const raw = (input.value || '').trim();
+      let intPart = '0', dec = '';
+      if (raw !== '') {
+        const cleaned = raw.replace('-', '');
+        const parts = cleaned.split('.');
+        intPart = (parts[0] === '') ? '0' : parts[0];
+        dec = (parts.length > 1) ? parts[1] : '';
+      }
+      baseInt = parseInt(intPart, 10);
+      if (isNaN(baseInt)) baseInt = 0;
+      decStr = dec;
+      input.blur(); // キーボードを閉じる
+      input.closest('.input-cell').classList.add('dialing');
+    }
 
     input.addEventListener('touchstart', (e) => {
       if (e.touches.length !== 1) return;
       const t = e.touches[0];
       touchId = t.identifier;
       startY = t.clientY;
+      moved = false;
       active = false;
-      clearTimeout(holdTimer);
-      holdTimer = setTimeout(() => {
-        // --- ダイヤルモード開始 ---
-        active = true;
-        baselineY = startY;
-        // 現在値を整数部・小数部に分解（小数部は維持）
-        const raw = (input.value || '').trim();
-        let intPart = '0', dec = '';
-        if (raw !== '') {
-          const cleaned = raw.replace('-', '');
-          const parts = cleaned.split('.');
-          intPart = (parts[0] === '') ? '0' : parts[0];
-          dec = (parts.length > 1) ? parts[1] : '';
-        }
-        baseInt = parseInt(intPart, 10);
-        if (isNaN(baseInt)) baseInt = 0;
-        decStr = dec;
-        input.blur(); // キーボードを閉じる
-        input.closest('.input-cell').classList.add('dialing');
-      }, HOLD_MS);
-    }, { passive: true });
+      const now = Date.now();
+      if (now - lastTapTime < DOUBLE_TAP_MS) {
+        // 2回目のタップ → そのままダイヤル開始
+        activate();
+        e.preventDefault();
+      }
+    }, { passive: false });
 
     input.addEventListener('touchmove', (e) => {
       let t = null;
@@ -554,13 +562,9 @@
       if (!t) t = e.touches[0];
       if (!t) return;
 
-      if (!active) {
-        // 長押し成立前：大きく動いたらスクロールと判断して中止
-        if (Math.abs(t.clientY - startY) > MOVE_CANCEL) {
-          clearTimeout(holdTimer);
-        }
-        return; // 通常スクロールを許可
-      }
+      if (Math.abs(t.clientY - startY) > MOVE_TAP_LIMIT) moved = true;
+
+      if (!active) return; // 通常スクロールを許可
 
       // --- ダイヤルモード中 ---
       e.preventDefault(); // ページスクロールを止める
@@ -572,10 +576,13 @@
     }, { passive: false });
 
     function endTouch() {
-      clearTimeout(holdTimer);
       if (active) {
         active = false;
         input.closest('.input-cell').classList.remove('dialing');
+        lastTapTime = 0; // ダイヤル後はリセット（再度ダブルタップが必要）
+      } else {
+        // 動かずに離した＝タップ成立。時刻を記録して次のタップと組で判定
+        lastTapTime = moved ? 0 : Date.now();
       }
       touchId = null;
     }
