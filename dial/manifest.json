@@ -1,0 +1,24 @@
+{
+  "name": "ガソリン 重量・容量 計算（ダイヤル版）",
+  "short_name": "ガソリン計算β",
+  "description": "ガソリンのリットルとキログラムを比重で相互変換する計算アプリ（ダイヤル入力対応）",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f0f2f5",
+  "theme_color": "#34495e",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "../icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "../icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

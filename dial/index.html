@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ガソリン計算β">
+<meta name="theme-color" content="#34495e">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="../icon-192.png">
+<title>ガソリン重量・容量 計算（ダイヤル版）</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Yu Gothic UI', 'Hiragino Sans', 'Meiryo', sans-serif;
+    background: #f0f2f5;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: 16px;
+    gap: 16px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .card {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+    padding: 28px 20px 24px;
+    width: 100%;
+    max-width: 480px;
+  }
+  h1 {
+    text-align: center;
+    font-size: 19px;
+    color: #333;
+    margin-bottom: 20px;
+    letter-spacing: 1px;
+  }
+
+  /* 比重セクション */
+  .gravity-section {
+    background: #e8f4fd;
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .gravity-section label {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1a5276;
+    white-space: nowrap;
+  }
+  .gravity-section input {
+    width: 110px;
+    padding: 8px 12px;
+    font-size: 18px;
+    font-weight: 700;
+    text-align: center;
+    border: 2px solid #85c1e9;
+    border-radius: 8px;
+    outline: none;
+    color: #1a5276;
+    background: #fff;
+    transition: border-color 0.2s;
+    -webkit-appearance: none;
+  }
+  .gravity-section input::placeholder {
+    color: #ccc;
+    font-weight: 400;
+    font-size: 14px;
+  }
+  .gravity-section input:focus {
+    border-color: #2980b9;
+  }
+
+  /* 計算テーブル */
+  .calc-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 2px solid #ddd;
+  }
+  .calc-table th {
+    background: #34495e;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 10px 8px;
+    text-align: center;
+  }
+  .calc-table td {
+    padding: 0;
+    height: 60px;
+    text-align: center;
+    vertical-align: middle;
+    border-top: 2px solid #ddd;
+  }
+  .calc-table td:first-child {
+    border-right: 2px solid #ddd;
+  }
+
+  /* 入力セル */
+  .input-cell {
+    position: relative;
+  }
+  .input-cell input {
+    width: 100%;
+    height: 100%;
+    padding: 12px 44px 12px 34px;
+    font-size: 20px;
+    font-weight: 700;
+    border: none;
+    outline: none;
+    background: transparent;
+    text-align: right;
+    color: #2c3e50;
+    -webkit-appearance: none;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .input-cell input::placeholder {
+    color: #ccc;
+    font-weight: 400;
+    font-size: 14px;
+  }
+  .input-cell .unit, .result-cell .unit {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 14px;
+    font-weight: 700;
+    pointer-events: none;
+    user-select: none;
+  }
+  .row-top .unit, .row-top .result-value { color: #c58a1a; }
+  .row-bottom .unit, .row-bottom .result-value { color: #27ae60; }
+
+  /* ダイヤル操作アイコン（左端・ヒント表示のみ） */
+  .dial-icon {
+    position: absolute;
+    left: 9px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 17px;
+    line-height: 1;
+    color: #b0b8c0;
+    pointer-events: none;
+    user-select: none;
+  }
+  .input-cell.dialing {
+    background: #eaf2ff !important;
+  }
+  .input-cell.dialing .dial-icon {
+    color: #3498db;
+  }
+
+  /* 結果セル */
+  .result-cell {
+    position: relative;
+  }
+
+  /* 上段の色（L → kg）*/
+  .row-top td { background: #fffef5; }
+  /* 下段の色（kg → L）*/
+  .row-bottom td { background: #f0faf0; }
+
+  .result-value {
+    font-size: 20px;
+    font-weight: 700;
+    padding-right: 44px;
+    min-height: 28px;
+    display: inline-block;
+    line-height: 28px;
+  }
+  .result-value:empty::before {
+    content: '---';
+    color: #ccc;
+    font-weight: 400;
+  }
+
+  /* 行ラベル */
+  .row-labels {
+    margin-top: 10px;
+    display: flex;
+    gap: 8px;
+  }
+  .row-label {
+    flex: 1;
+    font-size: 11px;
+    color: #999;
+    text-align: center;
+    padding: 4px 0;
+  }
+
+  /* 操作ヒント */
+  .dial-hint {
+    margin-top: 6px;
+    font-size: 11px;
+    color: #8aa0b8;
+    text-align: center;
+  }
+
+  /* 矢印 */
+  .arrow-header {
+    font-size: 10px;
+    letter-spacing: 0.5px;
+  }
+
+  /* フォーカスハイライト */
+  .input-cell:focus-within {
+    background: #fff9e6 !important;
+  }
+
+  /* ペーストボタン */
+  .paste-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 14px;
+  }
+  .paste-btn {
+    padding: 14px 0;
+    font-size: 16px;
+    font-weight: 700;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    text-align: center;
+    touch-action: manipulation;
+    transition: transform 0.08s;
+  }
+  .paste-btn:active {
+    transform: scale(0.97);
+  }
+  .paste-L {
+    background: #fffef5;
+    color: #c58a1a;
+    border: 2px solid #c58a1a;
+  }
+  .paste-Kg {
+    background: #f0faf0;
+    color: #27ae60;
+    border: 2px solid #27ae60;
+  }
+  .paste-clear {
+    background: #fdf0f0;
+    color: #e74c3c;
+    border: 2px solid #e74c3c;
+  }
+
+  /* ===== 電卓 ===== */
+  .calc-card {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+    padding: 16px;
+    width: 100%;
+    max-width: 480px;
+  }
+  .calc-display {
+    background: #1e2a38;
+    color: #fff;
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+    text-align: right;
+    min-height: 64px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .calc-expr {
+    font-size: 13px;
+    color: #8899aa;
+    min-height: 18px;
+    word-break: break-all;
+  }
+  .calc-result {
+    font-size: 28px;
+    font-weight: 700;
+    word-break: break-all;
+    line-height: 1.2;
+  }
+  .calc-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  .calc-btn {
+    padding: 14px 0;
+    font-size: 20px;
+    font-weight: 600;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    transition: background 0.1s, transform 0.08s;
+    touch-action: manipulation;
+  }
+  .calc-btn:active {
+    transform: scale(0.95);
+  }
+  .calc-btn.num {
+    background: #f4f6f8;
+    color: #2c3e50;
+  }
+  .calc-btn.num:active {
+    background: #e0e4e8;
+  }
+  .calc-btn.op {
+    background: #3498db;
+    color: #fff;
+  }
+  .calc-btn.op:active {
+    background: #2180b9;
+  }
+  .calc-btn.eq {
+    background: #e67e22;
+    color: #fff;
+  }
+  .calc-btn.eq:active {
+    background: #c96b15;
+  }
+  .calc-btn.fn {
+    background: #ecf0f1;
+    color: #e74c3c;
+    font-size: 16px;
+  }
+  .calc-btn.fn:active {
+    background: #dce0e1;
+  }
+  .calc-btn.wide {
+    grid-column: span 2;
+  }
+
+  /* スマホ向け微調整 */
+  @media (max-width: 380px) {
+    .card { padding: 20px 14px 18px; }
+    h1 { font-size: 17px; }
+    .input-cell input, .result-value { font-size: 18px; }
+    .calc-btn { padding: 12px 0; font-size: 18px; }
+    .calc-result { font-size: 24px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <h1>ガソリン 重量・容量 計算</h1>
+
+  <!-- 比重入力 -->
+  <div class="gravity-section">
+    <label for="gravity">比重:</label>
+    <input type="number" id="gravity" step="0.001" min="0" placeholder="比重入力" inputmode="decimal">
+  </div>
+
+  <!-- 計算テーブル -->
+  <table class="calc-table">
+    <thead>
+      <tr>
+        <th style="width:50%;">入力</th>
+        <th style="width:50%;">計算結果 <span class="arrow-header">（自動）</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- 上段: L → kg -->
+      <tr class="row-top">
+        <td class="input-cell">
+          <span class="dial-icon">&#8645;</span>
+          <input type="number" id="inputL" step="any" min="0" placeholder="数量を入力" inputmode="decimal">
+          <span class="unit">L</span>
+        </td>
+        <td class="result-cell">
+          <span class="result-value" id="resultKg"></span>
+          <span class="unit">kg</span>
+        </td>
+      </tr>
+      <!-- 下段: kg → L -->
+      <tr class="row-bottom">
+        <td class="input-cell">
+          <span class="dial-icon">&#8645;</span>
+          <input type="number" id="inputKg" step="any" min="0" placeholder="数量を入力" inputmode="decimal">
+          <span class="unit">kg</span>
+        </td>
+        <td class="result-cell">
+          <span class="result-value" id="resultL"></span>
+          <span class="unit">L</span>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="row-labels">
+    <div class="row-label">L × 比重 → kg</div>
+    <div class="row-label">kg ÷ 比重 → L</div>
+  </div>
+
+  <div class="dial-hint">&#8645; 数量欄を1秒長押し → 上下スワイプで1ずつ増減</div>
+
+</div>
+
+<!-- 電卓 -->
+<div class="calc-card">
+  <div class="calc-display">
+    <div class="calc-expr" id="calcExpr"></div>
+    <div class="calc-result" id="calcResult">0</div>
+  </div>
+  <div class="calc-grid">
+    <button class="calc-btn fn" data-act="clear">AC</button>
+    <button class="calc-btn fn" data-act="backspace">&#9003;</button>
+    <button class="calc-btn fn" data-act="percent">%</button>
+    <button class="calc-btn op" data-act="op" data-op="÷">÷</button>
+
+    <button class="calc-btn num" data-act="num" data-val="7">7</button>
+    <button class="calc-btn num" data-act="num" data-val="8">8</button>
+    <button class="calc-btn num" data-act="num" data-val="9">9</button>
+    <button class="calc-btn op" data-act="op" data-op="×">×</button>
+
+    <button class="calc-btn num" data-act="num" data-val="4">4</button>
+    <button class="calc-btn num" data-act="num" data-val="5">5</button>
+    <button class="calc-btn num" data-act="num" data-val="6">6</button>
+    <button class="calc-btn op" data-act="op" data-op="-">-</button>
+
+    <button class="calc-btn num" data-act="num" data-val="1">1</button>
+    <button class="calc-btn num" data-act="num" data-val="2">2</button>
+    <button class="calc-btn num" data-act="num" data-val="3">3</button>
+    <button class="calc-btn op" data-act="op" data-op="+">+</button>
+
+    <button class="calc-btn num wide" data-act="num" data-val="0">0</button>
+    <button class="calc-btn num" data-act="dot">.</button>
+    <button class="calc-btn eq" data-act="equals">=</button>
+  </div>
+  <div class="paste-buttons">
+    <button class="paste-btn paste-L" id="pasteL">L にペースト</button>
+    <button class="paste-btn paste-Kg" id="pasteKg">Kg にペースト</button>
+    <button class="paste-btn paste-clear" id="clearInputs">入力をクリア</button>
+  </div>
+</div>
+
+<script>
+  // --- PWA: Service Worker 登録 ---
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+
+  const gravityInput = document.getElementById('gravity');
+  const inputL       = document.getElementById('inputL');
+  const inputKg      = document.getElementById('inputKg');
+  const resultKg     = document.getElementById('resultKg');
+  const resultL      = document.getElementById('resultL');
+
+  // --- 比重を localStorage から復元 ---
+  const savedGravity = localStorage.getItem('gasoline_gravity');
+  if (savedGravity !== null) {
+    gravityInput.value = savedGravity;
+  }
+
+  // --- 計算関数 ---
+  function calc() {
+    const g = parseFloat(gravityInput.value);
+
+    // L → kg
+    const lVal = parseFloat(inputL.value);
+    if (!isNaN(g) && g > 0 && !isNaN(lVal)) {
+      resultKg.textContent = (lVal * g).toFixed(3);
+    } else {
+      resultKg.textContent = '';
+    }
+
+    // kg → L
+    const kgVal = parseFloat(inputKg.value);
+    if (!isNaN(g) && g > 0 && !isNaN(kgVal)) {
+      resultL.textContent = (kgVal / g).toFixed(3);
+    } else {
+      resultL.textContent = '';
+    }
+  }
+
+  // --- イベント ---
+  gravityInput.addEventListener('input', () => {
+    localStorage.setItem('gasoline_gravity', gravityInput.value);
+    calc();
+  });
+  inputL.addEventListener('input', calc);
+  inputKg.addEventListener('input', calc);
+
+  // 初期計算
+  calc();
+
+  // ===== ダイヤル操作（1秒長押し → 上下スワイプで整数部を1ずつ増減） =====
+  const STEP_PX     = 20;   // この px だけ動かすと 1 増減（iPadで約5mm）
+  const HOLD_MS     = 1000; // 長押し判定（ミリ秒）
+  const MOVE_CANCEL = 10;   // 長押し成立前にこれ以上動いたらスクロール扱いで中止
+
+  function attachDial(input) {
+    let holdTimer = null;
+    let active = false;
+    let startY = 0;
+    let baselineY = 0;
+    let baseInt = 0;
+    let decStr = '';
+    let touchId = null;
+
+    input.addEventListener('touchstart', (e) => {
+      if (e.touches.length !== 1) return;
+      const t = e.touches[0];
+      touchId = t.identifier;
+      startY = t.clientY;
+      active = false;
+      clearTimeout(holdTimer);
+      holdTimer = setTimeout(() => {
+        // --- ダイヤルモード開始 ---
+        active = true;
+        baselineY = startY;
+        // 現在値を整数部・小数部に分解（小数部は維持）
+        const raw = (input.value || '').trim();
+        let intPart = '0', dec = '';
+        if (raw !== '') {
+          const cleaned = raw.replace('-', '');
+          const parts = cleaned.split('.');
+          intPart = (parts[0] === '') ? '0' : parts[0];
+          dec = (parts.length > 1) ? parts[1] : '';
+        }
+        baseInt = parseInt(intPart, 10);
+        if (isNaN(baseInt)) baseInt = 0;
+        decStr = dec;
+        input.blur(); // キーボードを閉じる
+        input.closest('.input-cell').classList.add('dialing');
+      }, HOLD_MS);
+    }, { passive: true });
+
+    input.addEventListener('touchmove', (e) => {
+      let t = null;
+      for (let i = 0; i < e.touches.length; i++) {
+        if (e.touches[i].identifier === touchId) { t = e.touches[i]; break; }
+      }
+      if (!t) t = e.touches[0];
+      if (!t) return;
+
+      if (!active) {
+        // 長押し成立前：大きく動いたらスクロールと判断して中止
+        if (Math.abs(t.clientY - startY) > MOVE_CANCEL) {
+          clearTimeout(holdTimer);
+        }
+        return; // 通常スクロールを許可
+      }
+
+      // --- ダイヤルモード中 ---
+      e.preventDefault(); // ページスクロールを止める
+      const steps = Math.round((baselineY - t.clientY) / STEP_PX);
+      let newInt = baseInt + steps;
+      if (newInt < 0) newInt = 0;
+      input.value = newInt + (decStr ? '.' + decStr : '');
+      calc();
+    }, { passive: false });
+
+    function endTouch() {
+      clearTimeout(holdTimer);
+      if (active) {
+        active = false;
+        input.closest('.input-cell').classList.remove('dialing');
+      }
+      touchId = null;
+    }
+    input.addEventListener('touchend', endTouch);
+    input.addEventListener('touchcancel', endTouch);
+  }
+  attachDial(inputL);
+  attachDial(inputKg);
+
+  // ===== ペーストボタン =====
+  document.getElementById('pasteL').addEventListener('click', () => {
+    const val = calcResult.textContent;
+    if (val && val !== 'Error') {
+      inputL.value = val;
+      calc();
+    }
+  });
+  document.getElementById('pasteKg').addEventListener('click', () => {
+    const val = calcResult.textContent;
+    if (val && val !== 'Error') {
+      inputKg.value = val;
+      calc();
+    }
+  });
+  document.getElementById('clearInputs').addEventListener('click', () => {
+    inputL.value = '';
+    inputKg.value = '';
+    calc();
+  });
+
+  // ===== 電卓 =====
+  const calcExpr   = document.getElementById('calcExpr');
+  const calcResult = document.getElementById('calcResult');
+  let cCurrent = '0';
+  let cPrev = '';
+  let cOp = '';
+  let cJustEval = false;
+  let cExprLog = '';
+
+  function cUpdate() {
+    calcResult.textContent = cCurrent;
+    if (cExprLog) {
+      calcExpr.textContent = cExprLog + (cOp ? ' ' + cOp : '');
+    } else if (cPrev && cOp) {
+      calcExpr.textContent = cPrev + ' ' + cOp;
+    } else {
+      calcExpr.textContent = '';
+    }
+  }
+
+  function cEval(a, op, b) {
+    a = parseFloat(a); b = parseFloat(b);
+    if (isNaN(a) || isNaN(b)) return '0';
+    let r;
+    switch(op) {
+      case '+': r = a + b; break;
+      case '-': r = a - b; break;
+      case '×': r = a * b; break;
+      case '÷': r = b === 0 ? 'Error' : a / b; break;
+      default: return b.toString();
+    }
+    if (typeof r === 'number') {
+      r = parseFloat(r.toPrecision(12));
+    }
+    return r.toString();
+  }
+
+  document.querySelector('.calc-grid').addEventListener('click', (e) => {
+    const btn = e.target.closest('.calc-btn');
+    if (!btn) return;
+    const act = btn.dataset.act;
+
+    switch(act) {
+      case 'num': {
+        const v = btn.dataset.val;
+        if (cJustEval) { cCurrent = v; cJustEval = false; }
+        else if (cCurrent === '0' && v !== '0') cCurrent = v;
+        else if (cCurrent === '0' && v === '0') {}
+        else cCurrent += v;
+        break;
+      }
+      case 'dot':
+        if (cJustEval) { cCurrent = '0.'; cJustEval = false; }
+        else if (!cCurrent.includes('.')) cCurrent += '.';
+        break;
+      case 'op': {
+        const newOp = btn.dataset.op;
+        if (cPrev && cOp && !cJustEval) {
+          const prevExpr = cExprLog || cPrev;
+          const combined = prevExpr + ' ' + cOp + ' ' + cCurrent;
+          cExprLog = (newOp !== cOp) ? '(' + combined + ')' : combined;
+          cCurrent = cEval(cPrev, cOp, cCurrent);
+        } else if (cJustEval && cExprLog) {
+          cExprLog = (newOp !== cOp) ? '(' + cExprLog + ')' : cExprLog;
+        } else {
+          cExprLog = cCurrent;
+        }
+        cPrev = cCurrent;
+        cOp = newOp;
+        cCurrent = '0';
+        cJustEval = false;
+        break;
+      }
+      case 'equals':
+        if (cPrev && cOp) {
+          const prevExpr = cExprLog || cPrev;
+          const fullExpr = prevExpr + ' ' + cOp + ' ' + cCurrent;
+          cCurrent = cEval(cPrev, cOp, cCurrent);
+          cPrev = '';
+          cOp = '';
+          cExprLog = fullExpr;
+          calcExpr.textContent = fullExpr + ' =';
+          calcResult.textContent = cCurrent;
+          cJustEval = true;
+          return;
+        }
+        break;
+      case 'clear':
+        cCurrent = '0'; cPrev = ''; cOp = ''; cJustEval = false;
+        cExprLog = '';
+        break;
+      case 'backspace':
+        if (cJustEval) { cCurrent = '0'; cJustEval = false; }
+        else {
+          cCurrent = cCurrent.slice(0, -1);
+          if (!cCurrent || cCurrent === '-') cCurrent = '0';
+        }
+        break;
+      case 'percent':
+        cCurrent = (parseFloat(cCurrent) / 100).toString();
+        break;
+    }
+    cUpdate();
+  });
+</script>
+
+</body>
+</html>

@@ -1,10 +1,10 @@
-const CACHE_NAME = 'gasoline-calc-v10';
+const CACHE_NAME = 'gasoline-calc-dial-v1';
 const ASSETS = [
   './',
   './index.html',
   './manifest.json',
-  './icon-192.png',
-  './icon-512.png'
+  '../icon-192.png',
+  '../icon-512.png'
 ];
 
 // インストール時にキャッシュ
@@ -20,7 +20,7 @@ self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(
-        keys.filter((k) => k.startsWith('gasoline-calc-v') && k !== CACHE_NAME)
+        keys.filter((k) => k.startsWith('gasoline-calc-dial-') && k !== CACHE_NAME)
             .map((k) => caches.delete(k))
       )
     )
