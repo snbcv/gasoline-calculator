@@ -227,6 +227,11 @@
     color: #27ae60;
     border: 2px solid #27ae60;
   }
+  .paste-clear {
+    background: #fdf0f0;
+    color: #e74c3c;
+    border: 2px solid #e74c3c;
+  }
 
   /* ===== 電卓 ===== */
   .calc-card {
@@ -411,6 +416,7 @@
   <div class="paste-buttons">
     <button class="paste-btn paste-L" id="pasteL">L にペースト</button>
     <button class="paste-btn paste-Kg" id="pasteKg">Kg にペースト</button>
+    <button class="paste-btn paste-clear" id="clearInputs">入力をクリア</button>
   </div>
 </div>
 
@@ -478,6 +484,11 @@
       inputKg.value = val;
       calc();
     }
+  });
+  document.getElementById('clearInputs').addEventListener('click', () => {
+    inputL.value = '';
+    inputKg.value = '';
+    calc();
   });
 
   // ===== 電卓 =====
